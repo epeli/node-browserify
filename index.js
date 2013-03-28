@@ -5,6 +5,7 @@ var concatStream = require('concat-stream');
 var checkSyntax = require('syntax-error');
 
 var mdeps = require('module-deps');
+var extractDepTrees = require('extract-dep-trees');
 var browserPack = require('browser-pack');
 var browserResolve = require('browser-resolve');
 var insertGlobals = require('insert-module-globals');
@@ -34,6 +35,7 @@ function Browserify (files) {
     this._expose = {};
     this._mapped = {};
     this._transforms = [];
+    this._subtrees = {};
     
     [].concat(files).filter(Boolean).forEach(this.add.bind(this));
 }
@@ -100,6 +102,24 @@ Browserify.prototype.ignore = function (file) {
     return this;
 };
 
+Browserify.prototype.extractBundle = function(id, opts, cb){
+    this._subtrees[id] = {
+        cb: cb,
+        opts: opts
+    };
+    return this;
+};
+
+Browserify.prototype._packSubtree = function(id, subtreeDeps) {
+    var ob = this._subtrees[id];
+    var subtreeBundle = new Browserify(id);
+    subtreeBundle.deps = function() {
+        // deps are already resolved by extractDepTrees
+        return subtreeDeps;
+    };
+    subtreeBundle.bundle(ob.opts, ob.cb);
+};
+
 Browserify.prototype.bundle = function (opts, cb) {
     var self = this;
     if (typeof opts === 'function') {
@@ -148,8 +168,10 @@ Browserify.prototype.bundle = function (opts, cb) {
     
     d.on('error', p.emit.bind(p, 'error'));
     g.on('error', p.emit.bind(p, 'error'));
-    d.pipe(g).pipe(p);
-    
+
+    var filterDeps = extractDepTrees(Object.keys(self._subtrees));
+    filterDeps.on("subtree", self._packSubtree);
+    d.pipe(filterDeps).pipe(g).pipe(p);
     return p;
 };
 
