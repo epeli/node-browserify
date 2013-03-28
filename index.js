@@ -20,7 +20,7 @@ module.exports = function (files) {
 
 function hash(what) {
     return crypto.createHash('md5').update(what).digest('base64').slice(0, 6);
-};
+}
 
 inherits(Browserify, EventEmitter);
 
@@ -133,8 +133,8 @@ Browserify.prototype.bundle = function (opts, cb) {
     }
     
     var d = self.deps(opts);
-    var g = opts.detectGlobals || opts.insertGlobals
-        ? insertGlobals(self.files, {
+    var g = opts.detectGlobals || opts.insertGlobals ?
+        insertGlobals(self.files, {
             resolve: self._resolve.bind(self),
             always: opts.insertGlobals
         })
@@ -293,9 +293,9 @@ Browserify.prototype._resolve = function (id, parent, cb) {
     
     return browserResolve(id, parent, function(err, file) {
         if (err) return cb(err);
-        if (!file) return cb(new Error('module '
-            + JSON.stringify(id) + ' not found from '
-            + JSON.stringify(parent.filename)
+        if (!file) return cb(new Error('module ' +
+            JSON.stringify(id) + ' not found from ' +
+            JSON.stringify(parent.filename)
         ));
         
         if (self._ignore[file]) return cb(null, emptyModulePath);
